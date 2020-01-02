@@ -1,0 +1,85 @@
+service: waitlist-service
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: dev
+  region: us-west-2
+  environment:
+    WAITLIST_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+      Resource: "*"
+
+layers:
+  deps:
+    path: layers
+
+functions:
+  waitlistAdd:
+    handler: api/waitlist.add
+    memorySize: 128
+    description: Adds user to the waitlist
+    events:
+      - http:
+          path: waitlist
+          method: post
+    layers:
+      - { Ref: DepsLambdaLayer }
+  
+  listWaitlist:
+    handler: api/waitlist.getAll
+    memorySize: 128
+    description: Gets all in waitlist
+    events:
+      - http: 
+          path: waitlist
+          method: get  
+    layers:
+      - { Ref: DepsLambdaLayer }
+
+  getWaitlistDetail:
+    handler: api/waitlist.get
+    events:
+      - http:
+          path: waitlist/{id}
+          method: get
+    layers:
+      - { Ref: DepsLambdaLayer }
+
+  updateWaitlistStatus:
+    handler: api/waitlist.put
+    events:
+      - http:
+          path: waitlist/{id}
+          method: put
+    layers:
+      - { Ref: DepsLambdaLayer }
+
+resources:
+  Resources:
+    WaitlistDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "id"
+            AttributeType: "S"   
+        KeySchema:
+          -
+            AttributeName: "id"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        StreamSpecification:
+          StreamViewType: "NEW_AND_OLD_IMAGES"
+        TableName: ${self:provider.environment.WAITLIST_TABLE}
