@@ -8,7 +8,8 @@ const errorResponse = (msg) =>{
       message: msg,
     },
     null,
-    2)
+    2),
+    headers:{ 'Access-Control-Allow-Origin' : '*' }
   }
 } 
 
@@ -20,7 +21,8 @@ const successResponse = (msg, data) =>{
       data: data,
     },
     null,
-    2)
+    2),
+    headers:{ 'Access-Control-Allow-Origin' : '*' }
   }
 }
 
