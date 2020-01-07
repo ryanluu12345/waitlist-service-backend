@@ -16,6 +16,11 @@ provider:
         - dynamodb:GetItem
         - dynamodb:PutItem
         - dynamodb:UpdateItem
+        - dynamodb:DescribeStream
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+        - dynamodb:ListStreams
+        - sns:Publish
       Resource: "*"
 
 layers:
@@ -33,15 +38,15 @@ functions:
           method: post
     layers:
       - { Ref: DepsLambdaLayer }
-  
+
   listWaitlist:
     handler: api/waitlist.getAll
     memorySize: 128
     description: Gets all in waitlist
     events:
-      - http: 
+      - http:
           path: waitlist
-          method: get  
+          method: get
     layers:
       - { Ref: DepsLambdaLayer }
 
@@ -63,19 +68,22 @@ functions:
     layers:
       - { Ref: DepsLambdaLayer }
 
+  processWaitlistStream:
+    handler: streams/waitlist.process
+    events:
+      - stream: arn:aws:dynamodb:us-west-2:547974702614:table/waitlist-service-dev/stream/2020-01-01T07:24:12.867
+
 resources:
   Resources:
     WaitlistDynamoDbTable:
-      Type: 'AWS::DynamoDB::Table'
+      Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
-          -
-            AttributeName: "id"
-            AttributeType: "S"   
+          - AttributeName: "id"
+            AttributeType: "S"
         KeySchema:
-          -
-            AttributeName: "id"
+          - AttributeName: "id"
             KeyType: "HASH"
         ProvisionedThroughput:
           ReadCapacityUnits: 5
